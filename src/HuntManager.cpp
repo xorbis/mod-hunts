@@ -2051,8 +2051,15 @@ void HuntManager::OnCreatureKill(Player* player, Creature* killed)
                     }
                 }
 
-                ChatHandler(hunter->GetSession()).SendSysMessage(
-                    "|cff00ff00[Hunts]|r Your quarry is dead. A Return Rift has opened nearby and will remain for 2 minutes.");
+                // Only promise a Return Rift when one actually exists: the feature can be
+                // disabled (Hunts.ReturnRift.Enable) or the summon can fail, and the
+                // lifetime is configurable rather than a fixed 2 minutes.
+                if (returnRift)
+                    ChatHandler(hunter->GetSession()).PSendSysMessage(
+                        "|cff00ff00[Hunts]|r Your quarry is dead. A Return Rift has opened nearby and will remain for {} seconds.", _returnRiftDuration);
+                else
+                    ChatHandler(hunter->GetSession()).SendSysMessage(
+                        "|cff00ff00[Hunts]|r Your quarry is dead. Return to the Huntmaster to claim your reward.");
             }
         }
         else

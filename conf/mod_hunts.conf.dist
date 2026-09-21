@@ -7,6 +7,12 @@ Hunts.MinimumLevel = 10
 # 0 = Local Region, 1 = Continent, 2 = World
 Hunts.SearchScope = 0
 
+# What the capital guards offer in their directions menu, and the name on the map pin and in
+# the chat line when it is picked ("<Label> - <City>"). Change them when other service NPCs
+# stand with the Huntmasters, e.g. "Huntmaster & Transmogrifier".
+Hunts.GuardDirections.OptionText = "Where is the Huntmaster?"
+Hunts.GuardDirections.Label = "Huntmaster"
+
 # Completion XP multiplier for all Hunts. Default preserves current tuning.
 Hunts.XPMultiplier = 0.75
 

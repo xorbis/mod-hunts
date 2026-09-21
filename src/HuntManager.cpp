@@ -800,6 +800,12 @@ void HuntManager::Configure(bool enabled, uint8 minimumLevel, float xpMultiplier
     _sharedFinalCreditRadius = std::max(0.0f, sharedFinalCreditRadius);
 }
 
+void HuntManager::ConfigureGuardDirections(std::string optionText, std::string label)
+{
+    _guardDirectionsOptionText = optionText.empty() ? "Where is the Huntmaster?" : std::move(optionText);
+    _guardDirectionsLabel = label.empty() ? "Huntmaster" : std::move(label);
+}
+
 void HuntManager::ConfigureReturnRift(bool enabled, uint32 duration, float arrivalDistance)
 {
     _returnRiftEnabled = enabled;
@@ -1316,9 +1322,9 @@ bool HuntManager::SendHuntmasterLocation(Player* player, uint32 guardEntry, std:
     if (player->GetMapId() != g.MapId) { message = "The Huntmaster is not on this map."; return false; }
 
     WorldPacket poi(SMSG_GOSSIP_POI, 64);
-    poi << uint32(6) << float(g.X) << float(g.Y) << uint32(7) << uint32(0) << std::string("Huntmaster - ") + g.CityName;
+    poi << uint32(6) << float(g.X) << float(g.Y) << uint32(7) << uint32(0) << _guardDirectionsLabel + " - " + g.CityName;
     player->GetSession()->SendPacket(&poi);
-    message = "The Huntmaster has been marked on your map.";
+    message = _guardDirectionsLabel + ": marked on your map.";
     return true;
 }
 

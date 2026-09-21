@@ -62,6 +62,8 @@ enum class HuntsConfig
     ReturnRiftEnable,
     ReturnRiftDuration,
     ReturnRiftArrivalDistance,
+    GuardDirectionsOptionText,
+    GuardDirectionsLabel,
     Count
 };
 
@@ -74,6 +76,8 @@ public:
         SetConfigValue<bool>(HuntsConfig::ReturnRiftEnable, "Hunts.ReturnRift.Enable", true);
         SetConfigValue<uint32>(HuntsConfig::ReturnRiftDuration, "Hunts.ReturnRift.DurationSeconds", 120);
         SetConfigValue<float>(HuntsConfig::ReturnRiftArrivalDistance, "Hunts.ReturnRift.ArrivalDistance", 3.0f);
+        SetConfigValue<std::string>(HuntsConfig::GuardDirectionsOptionText, "Hunts.GuardDirections.OptionText", "Where is the Huntmaster?");
+        SetConfigValue<std::string>(HuntsConfig::GuardDirectionsLabel, "Hunts.GuardDirections.Label", "Huntmaster");
         SetConfigValue<bool>(HuntsConfig::Enabled, "Hunts.Enable", true);
         SetConfigValue<bool>(HuntsConfig::Debug, "Hunts.Debug", false);
         SetConfigValue<uint32>(HuntsConfig::MinimumLevel, "Hunts.MinimumLevel", 10);
@@ -172,6 +176,9 @@ public:
             huntsConfig.GetConfigValue<bool>(HuntsConfig::ReturnRiftEnable),
             huntsConfig.GetConfigValue<uint32>(HuntsConfig::ReturnRiftDuration),
             huntsConfig.GetConfigValue<float>(HuntsConfig::ReturnRiftArrivalDistance));
+        sHuntMgr.ConfigureGuardDirections(
+            std::string(huntsConfig.GetConfigValue(HuntsConfig::GuardDirectionsOptionText)),
+            std::string(huntsConfig.GetConfigValue(HuntsConfig::GuardDirectionsLabel)));
         sHuntMgr.ConfigureEliteRewardTargeting(
             huntsConfig.GetConfigValue<bool>(HuntsConfig::EliteRewardRequireUpgrade),
             huntsConfig.GetConfigValue<float>(HuntsConfig::EliteRewardUpgradePoolPct),

@@ -541,7 +541,7 @@ public:
             return false;
 
         player->PrepareGossipMenu(creature, creature->GetGossipMenuId(), true);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Where is the Huntmaster?", GOSSIP_SENDER_MAIN, ACTION_GUARD_HUNTMASTER);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, sHuntMgr.GetGuardDirectionsOptionText(), GOSSIP_SENDER_MAIN, ACTION_GUARD_HUNTMASTER);
         player->SendPreparedGossip(creature);
         return true;
     }

@@ -181,6 +181,10 @@ public:
         uint32 eliteEndgameRewardMinItemLevel, uint32 eliteEndgameRewardMaxItemLevel,
         uint8 trackingProgressMin, uint8 trackingProgressMax, float groupCreditRadius, float sharedFinalCreditRadius);
     void ConfigureReturnRift(bool enabled, uint32 duration, float arrivalDistance);
+    // The guards' direction option and the name used for the map pin / chat line (a realm can
+    // seat other service NPCs next to its Huntmasters and name the option accordingly).
+    void ConfigureGuardDirections(std::string optionText, std::string label);
+    std::string const& GetGuardDirectionsOptionText() const { return _guardDirectionsOptionText; }
     void ClearReturnRift(Player* player);
     bool OnReturnRiftUsed(Player* player, GameObject* object, std::string& message);
     void Reset();
@@ -240,6 +244,8 @@ public:
 private:
     HuntManager() = default;
     void RemoveReturnRift(HuntRuntime& runtime, char const* reason);
+    std::string _guardDirectionsOptionText = "Where is the Huntmaster?";
+    std::string _guardDirectionsLabel = "Huntmaster";
     bool _returnRiftEnabled = true;
     uint32 _returnRiftDuration = 120;
     float _returnRiftArrivalDistance = 3.0f;

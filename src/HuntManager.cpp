@@ -26,6 +26,7 @@
 #include "CreatureAI.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -495,6 +496,37 @@ float GetEquippedPowerForCandidate(Player* player, uint32 spec, RewardRole role,
         default:
             return 0.0f;
     }
+}
+
+// Highest item level a reward of this quality may have while the realm is
+// capped below 80: the level-60 cap only hands out Classic items and the
+// level-70 cap only Classic + TBC ones, even when a later expansion's item has
+// a low enough required level. 0 = no cap.
+uint32 GetExpansionRewardItemLevelCap(uint32 quality)
+{
+    uint32 const maxLevel = sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL);
+    if (maxLevel <= 60)
+        return quality == ITEM_QUALITY_UNCOMMON ? 65 : (quality == ITEM_QUALITY_RARE ? 74 : 92);
+    if (maxLevel <= 70)
+        return quality == ITEM_QUALITY_UNCOMMON ? 120 : (quality == ITEM_QUALITY_RARE ? 115 : 164);
+    return 0;
+}
+
+// Blizzard's placeholder and test items ("90 Green Rogue Bow", "Monster - ...")
+// are still in item_template and pass every other reward filter.
+bool IsPlaceholderItem(ItemTemplate const& item)
+{
+    std::string const& name = item.Name1;
+    std::size_t digits = 0;
+    while (digits < name.size() && std::isdigit(static_cast<unsigned char>(name[digits])))
+        ++digits;
+    if (digits && (name.compare(digits, 7, " Green ") == 0 || name.compare(digits, 6, " Blue ") == 0 ||
+        name.compare(digits, 8, " Purple ") == 0 || name.compare(digits, 6, " Epic ") == 0))
+        return true;
+    for (char const* marker : { "Test ", " Test", "TEST", "Monster - ", "Deprecated", "DEPRECATED", "Obsolete", "[PH]", "(OLD)" })
+        if (name.find(marker) != std::string::npos)
+            return true;
+    return false;
 }
 
 uint32 GetEquippedItemLevel(Player* player, uint8 equipmentSlot)
@@ -1733,6 +1765,10 @@ bool HuntManager::TurnInHunt(Player* player, Creature* giver, std::string& messa
             itemTemplate.InventoryType == INVTYPE_QUIVER)
             continue;
         if (itemTemplate.RequiredLevel > level || itemTemplate.RequiredLevel < minRequiredLevel)
+            continue;
+        if (uint32 const itemLevelCap = GetExpansionRewardItemLevelCap(desiredQuality); itemLevelCap && itemTemplate.ItemLevel > itemLevelCap)
+            continue;
+        if (IsPlaceholderItem(itemTemplate))
             continue;
 
         // At level cap an Elite Hunt's immediate equipment reward is deliberately

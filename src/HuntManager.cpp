@@ -1239,6 +1239,17 @@ HuntZoneDefinition const* HuntManager::GetZone(uint32 zoneId) const
 
 HuntZoneDefinition const* HuntManager::SelectZone(uint8 level, HuntGiverDefinition const& giver) const
 {
+    // A city's local region only covers some level ranges (Orgrimmar stops at
+    // Azshara 45-55), so a level it has no zone for searches the continent.
+    if (HuntZoneDefinition const* zone = SelectZone(level, giver, _searchScope))
+        return zone;
+    if (_searchScope == HuntSearchScope::LocalRegion)
+        return SelectZone(level, giver, HuntSearchScope::Continent);
+    return nullptr;
+}
+
+HuntZoneDefinition const* HuntManager::SelectZone(uint8 level, HuntGiverDefinition const& giver, HuntSearchScope scope) const
+{
     std::vector<HuntZoneDefinition const*> eligible;
     uint64 totalWeight = 0;
     for (auto const& zone : _zones)
@@ -1246,10 +1257,10 @@ HuntZoneDefinition const* HuntManager::SelectZone(uint8 level, HuntGiverDefiniti
         if (!zone.Enabled || level < zone.MinLevel || level > zone.MaxLevel)
             continue;
 
-        if (_searchScope == HuntSearchScope::Continent && zone.ContinentId != giver.ContinentId)
+        if (scope == HuntSearchScope::Continent && zone.ContinentId != giver.ContinentId)
             continue;
 
-        if (_searchScope == HuntSearchScope::LocalRegion)
+        if (scope == HuntSearchScope::LocalRegion)
         {
             auto local = _giverLocalZones.find(giver.Id);
             if (local == _giverLocalZones.end() || std::find(local->second.begin(), local->second.end(), zone.ZoneId) == local->second.end())

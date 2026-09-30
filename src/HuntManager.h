@@ -260,6 +260,7 @@ private:
     void SaveRuntime(HuntRuntime const& runtime);
     void DeleteRuntime(uint32 characterGuid);
     HuntZoneDefinition const* SelectZone(uint8 playerLevel, HuntGiverDefinition const& giver) const;
+    HuntZoneDefinition const* SelectZone(uint8 playerLevel, HuntGiverDefinition const& giver, HuntSearchScope scope) const;
     HuntZoneDefinition const* GetZone(uint32 zoneId) const;
     HuntFinalLocationDefinition const* SelectFinalLocation(HuntRuntime const& runtime, uint8 hunterLevel) const;
     bool SpawnPrey(Player* player, HuntRuntime& runtime, bool finalEncounter, std::string& message);

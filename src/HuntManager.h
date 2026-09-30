@@ -154,6 +154,9 @@ struct HuntRuntime
     uint32 GiverSpawnId = 0;
     uint32 ZoneId = 0;
     uint32 FinalLocationId = 0;
+    // Character level when the hunt was taken: the rewards are for that level.
+    // 0 for hunts taken before it was recorded.
+    uint8 TakenLevel = 0;
     uint8 TrackingProgress = 0;
     uint8 AmbushesCompleted = 0;
     bool AmbushPending = false;

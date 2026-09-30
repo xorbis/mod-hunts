@@ -1182,12 +1182,12 @@ void HuntManager::Initialize()
 void HuntManager::LoadRuntimes()
 {
     _runtimes.clear();
-    if (QueryResult result = CharacterDatabase.Query("SELECT `guid`,`prey_id`,`giver_entry`,`giver_spawn_id`,`zone_id`,`final_location_id`,`tracking_progress`,`ambushes_completed`,`ambush_pending`,`state` FROM `hunt_runtime`"))
+    if (QueryResult result = CharacterDatabase.Query("SELECT `guid`,`prey_id`,`giver_entry`,`giver_spawn_id`,`zone_id`,`final_location_id`,`tracking_progress`,`ambushes_completed`,`ambush_pending`,`state`,`taken_level` FROM `hunt_runtime`"))
     {
         do
         {
             Field* f=result->Fetch(); HuntRuntime r;
-            r.CharacterGuid=f[0].Get<uint32>(); r.PreyId=f[1].Get<uint32>(); r.GiverEntry=f[2].Get<uint32>(); r.GiverSpawnId=f[3].Get<uint32>(); r.ZoneId=f[4].Get<uint32>(); r.FinalLocationId=f[5].Get<uint32>(); r.TrackingProgress=f[6].Get<uint8>(); r.AmbushesCompleted=f[7].Get<uint8>(); r.AmbushPending=f[8].Get<uint8>()!=0; r.State=static_cast<HuntState>(f[9].Get<uint8>());
+            r.CharacterGuid=f[0].Get<uint32>(); r.PreyId=f[1].Get<uint32>(); r.GiverEntry=f[2].Get<uint32>(); r.GiverSpawnId=f[3].Get<uint32>(); r.ZoneId=f[4].Get<uint32>(); r.FinalLocationId=f[5].Get<uint32>(); r.TrackingProgress=f[6].Get<uint8>(); r.AmbushesCompleted=f[7].Get<uint8>(); r.AmbushPending=f[8].Get<uint8>()!=0; r.State=static_cast<HuntState>(f[9].Get<uint8>()); r.TakenLevel=f[10].Get<uint8>();
             _runtimes[r.CharacterGuid]=r;
         } while(result->NextRow());
     }
@@ -1202,10 +1202,11 @@ void HuntManager::SaveRuntime(HuntRuntime const& r)
     // memory has already advanced to FinalLocated).
     std::ostringstream sql;
     sql << "REPLACE INTO `hunt_runtime` "
-        << "(`guid`,`prey_id`,`giver_entry`,`giver_spawn_id`,`zone_id`,`final_location_id`,`tracking_progress`,`ambushes_completed`,`ambush_pending`,`state`) VALUES ("
+        << "(`guid`,`prey_id`,`giver_entry`,`giver_spawn_id`,`zone_id`,`final_location_id`,`tracking_progress`,`ambushes_completed`,`ambush_pending`,`state`,`taken_level`) VALUES ("
         << r.CharacterGuid << ',' << r.PreyId << ',' << r.GiverEntry << ',' << r.GiverSpawnId << ','
         << r.ZoneId << ',' << r.FinalLocationId << ',' << uint32(r.TrackingProgress) << ','
-        << uint32(r.AmbushesCompleted) << ',' << (r.AmbushPending ? 1 : 0) << ',' << static_cast<uint32>(r.State) << ')';
+        << uint32(r.AmbushesCompleted) << ',' << (r.AmbushPending ? 1 : 0) << ',' << static_cast<uint32>(r.State) << ','
+        << uint32(r.TakenLevel) << ')';
     CharacterDatabase.DirectExecute(sql.str().c_str());
 }
 
@@ -1380,7 +1381,7 @@ bool HuntManager::RequestHunt(Player* player, Creature* giver, std::string& mess
     if(!zone){message="I have no suitable prey within the configured hunting range for your level.";return false;}
 
     HuntDefinition const& hunt=*eligible[urand(0,static_cast<uint32>(eligible.size()-1))];
-    HuntRuntime r; r.CharacterGuid=player->GetGUID().GetCounter(); r.PreyId=hunt.Id; r.GiverEntry=giver->GetEntry(); r.GiverSpawnId=giver->GetSpawnId(); r.ZoneId=zone->ZoneId; r.State=HuntState::Tracking;
+    HuntRuntime r; r.CharacterGuid=player->GetGUID().GetCounter(); r.PreyId=hunt.Id; r.GiverEntry=giver->GetEntry(); r.GiverSpawnId=giver->GetSpawnId(); r.ZoneId=zone->ZoneId; r.State=HuntState::Tracking; r.TakenLevel=player->GetLevel();
     _runtimes[r.CharacterGuid]=r; SaveRuntime(r);
     message="Your quarry is "+hunt.Name+". Travel to "+zone->Name+" and hunt normally; signs of your prey will reveal themselves.";
     return true;
@@ -1651,7 +1652,7 @@ bool HuntManager::RequestEliteHunt(Player* player, Creature* giver, std::string&
         "`elite_daily_accept_reset_date`=CURRENT_DATE()", characterGuid);
 
     HuntRuntime r; r.CharacterGuid=characterGuid; r.PreyId=hunt.Id; r.GiverEntry=giver->GetEntry();
-    r.GiverSpawnId=giver->GetSpawnId(); r.ZoneId=zone->ZoneId; r.State=HuntState::Tracking;
+    r.GiverSpawnId=giver->GetSpawnId(); r.ZoneId=zone->ZoneId; r.State=HuntState::Tracking; r.TakenLevel=player->GetLevel();
     _runtimes[r.CharacterGuid]=r; SaveRuntime(r);
     message="Elite quarry: "+hunt.Name+". Travel to "+zone->Name+
         ". This prey is more dangerous than an ordinary Hunt target. At level 80, the final challenge is yours alone.";
@@ -1713,7 +1714,16 @@ bool HuntManager::TurnInHunt(Player* player, Creature* giver, std::string& messa
 
     // Gold scales quadratically with level: 20 copper * level^2 at 1.0x.
     // Examples: level 10 = 20s, level 40 = 3g20s, level 80 = 12g80s.
-    uint32 level = player->GetLevel();
+    // Gold and the item reward are for the level the hunt was taken at, not the
+    // level reached since. Older hunts without a recorded level use the current
+    // level held inside the hunt zone's level range.
+    uint32 level = r.TakenLevel;
+    if (!level)
+    {
+        level = player->GetLevel();
+        if (HuntZoneDefinition const* zone = GetZone(r.ZoneId))
+            level = std::clamp<uint32>(level, zone->MinLevel, zone->MaxLevel);
+    }
     uint32 moneyReward = static_cast<uint32>(std::round(20.0f * level * level * rewardMultiplier * eliteGoldRewardMultiplier));
     if (moneyReward)
         player->ModifyMoney(static_cast<int32>(moneyReward));

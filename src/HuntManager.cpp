@@ -1650,7 +1650,8 @@ bool HuntManager::TurnInHunt(Player* player, Creature* giver, std::string& messa
     auto it=_runtimes.find(player->GetGUID().GetCounter()); if(it==_runtimes.end()){message="You have no hunt to turn in.";return false;}
     HuntRuntime const& r=it->second;
     if(r.State!=HuntState::ReadyToTurnIn){message="Your quarry still lives.";return false;}
-    if(r.GiverEntry!=giver->GetEntry() || (r.GiverSpawnId && r.GiverSpawnId!=giver->GetSpawnId())){message="Return to the Huntmaster who gave you this hunt.";return false;}
+    // Any Huntmaster can take the turn-in, not only the one who gave the hunt.
+    if(!IsHuntGiver(giver->GetEntry())){message="That creature is not a Huntmaster.";return false;}
     HuntRuntime& mutableRuntime=it->second; RemoveFinalActivator(player,mutableRuntime);
 
     HuntDefinition const* hunt = GetDefinition(r.PreyId);
